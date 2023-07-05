@@ -9,9 +9,7 @@ const _isNotOperator = (component: string) =>
   component !== '+' &&
   component !== '-' &&
   component !== '*' &&
-  component !== '/' &&
-  component !== '(' &&
-  component !== ')'
+  component !== '/'
 
 const _detectCircularDependency = (
   id: string,
@@ -23,13 +21,12 @@ const _detectCircularDependency = (
   if (components.includes(id))
     circularDepedencyFields.push(id)
 
-  if (!dependencies.size) return circularDepedencyFields
+  if (!dependencies.size)
+    return circularDepedencyFields
 
-  for (const component of components) {
-    if (dependencies.has(component)) {
+  for (const component of components)
+    if (dependencies.has(component))
       circularDepedencyFields.push(component)
-    }
-  }
 
   return circularDepedencyFields
 }
@@ -41,26 +38,13 @@ export const useEvaluateMathExpression = () => {
     const consecutiveOperatorRegex = /[-+*/]{2}/g
     const alphabeticLetterWithFloatingPointRegex = /[A-Za-z_]\d*\.\d+/g
     const consecutiveLettersRegex = /[A-Za-z_][A-Za-z_]/g
+    const invalidNonAlphaNumericRegex = /[^a-zA-Z0-9+\-./*]/g
+
+    if (invalidNonAlphaNumericRegex.test(sanitizedExpression))
+      return "Invalid expression: Invalid non-alphanumeric character"
 
     if (consecutiveOperatorRegex.test(sanitizedExpression))
       return "Invalid expression: Consecutive operators"
-
-    const parenthesesStack: string[] = []
-
-    for (let i = 0; i < sanitizedExpression.length; i++) {
-      const char = sanitizedExpression[i]
-
-      if (char === '(') {
-        parenthesesStack.push(char)
-      } else if (char === ')') {
-        if (parenthesesStack.length === 0)
-          return "Invalid expression: Unmatched closing parenthesis"
-        parenthesesStack.pop()
-      }
-    }
-
-    if (parenthesesStack.length > 0)
-      return "Invalid expression: Unmatched opening parenthesis"
 
     if (alphabeticLetterWithFloatingPointRegex.test(sanitizedExpression))
       return "Invalid expression: Alphabetic letter followed by a floating point"
@@ -169,17 +153,6 @@ export const useEvaluateMathExpression = () => {
 
         const variableData = [fieldValue]
         stack.push(...variableData)
-      } else if (component === '(') {
-        stack.push(component)
-      } else if (component === ')') {
-        while (stack.length > 0 && stack[stack.length - 1] !== '(') {
-          applyOperator()
-        }
-        if (stack[stack.length - 1] === '(') {
-          stack.pop()
-        } else {
-          throw new Error('Invalid expression: Mismatched parentheses')
-        }
       } else {
         while (
           stack.length >= 2 &&
@@ -198,7 +171,7 @@ export const useEvaluateMathExpression = () => {
 
     if (stack.length === 1 && typeof stack[0] === 'number') {
       return {
-        result: stack[0] as number,
+        result: Math.round(stack[0] * 100) / 100,
         dependencies: fieldComponents
       }
     } else {
