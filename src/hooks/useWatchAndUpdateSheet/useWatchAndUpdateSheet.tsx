@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { useSetState } from 'react-use'
 import { useQuery, useMutation } from 'react-query'
 import { SheetsProvider } from '@/providers/sheet.provider'
 import {
@@ -9,36 +8,25 @@ import {
   SpreadSheetFieldState
 } from '@/types'
 
-interface SavableSheet {
-  values: string[]
-  blob: string
-}
-
 export const useWatchAndUpdateSheet = (
   sheet: SpreadSheetType,
-  lastEditField: { column: number, row: number }
+  lastEditField: { column: number, row: number, maxRow: number }
 ) => {
   const [canSaveAgain, setCanSaveAgain] = useState(false)
   const [activeSaveId, setActiveSaveId] = useState<string>("")
+  const [savableSheet, setSavableSheet] = useState<string[]>(sheet.map((row) => row.map((field) => field.display)).flat())
 
   const headers = useMemo<string[]>(() => {
     const alphabets: string[] = []
-    for (let i = 0; i < sheet[0].length; i++) {
+    for (let i = 0; i < sheet[0].length; i++)
       alphabets.push(String.fromCharCode(65 + i))
-    }
     return alphabets
   }, [sheet[0].length])
 
-  const [savableSheet, setSavableSheet] = useSetState<SavableSheet>({
-    values: [],
-    blob: ''
-  })
-
   const generateCSVString = () => {
     const rows = [headers.join(",")]
-    const lastEditedRow = lastEditField.row
-
-    for (let i = 0; i < lastEditedRow + 1; i++) {
+    const outMostEditedRow = lastEditField.maxRow
+    for (let i = 0; i < outMostEditedRow + 1; i++) {
       const row = sheet[i]
       const formattedRow = row.map((row) => {
         const { display: displayedValue, hasError } = row
@@ -49,7 +37,6 @@ export const useWatchAndUpdateSheet = (
       })
       rows.push(formattedRow.join(","))
     }
-
     return rows.join("\n")
   }
 
@@ -58,8 +45,19 @@ export const useWatchAndUpdateSheet = (
   }
 
   useEffect(() => {
-    prepareSheetForUpdateAndDownload()
+    setSavableSheet(prev => {
+      const { column, row } = lastEditField
+      const index = (row * headers.length) + column
+      const newValues = [...prev]
+      newValues[index] = sheet[row][column].display
+      return newValues
+    })
   }, [lastEditField])
+
+  useEffect(() => {
+    const csv = generateCSVString()
+    console.log(csv)
+  }, [savableSheet])
 
   return {
 

@@ -43,7 +43,7 @@ export const SpreadSheetContext = createContext({} as SpreadSheetStateValue)
 export const SpreadSheetStateProvider = ({ children }: Props) => {
 
   const [canAddMore, setCanAddMore] = useState(false)
-  const [lastEditField, setLastEditedField] = useState({ column: 0, row: 0 })
+  const [lastEditField, setLastEditedField] = useState({ column: 0, row: 0, maxRow: 0 })
 
   // { [reference: string]: Set<row-column> }
   const [dependancysMap, setDependancysMap] = useSetState<Record<string, Set<string>>>({})
@@ -104,7 +104,13 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
         return updatedSheet
       })
 
-      setLastEditedField({ row, column })
+      setLastEditedField((prev) => {
+        return {
+          row,
+          column,
+          maxRow: Math.max(prev.maxRow, row)
+        }
+      })
 
       if (row / ADDING_MORE_ROWS_THRESHOLD_DIVISOR > 0.8)
         setCanAddMore(true)
@@ -122,7 +128,6 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
     if (!canAddMore) return;
     const lastRowIndex = sheet.length - 1;
 
-    // O(n+m) n=rowsToAdd, m=columnsAlreadyPresent
     setSheet(prev => {
       const newSheet = [...prev]
       const newRow = []
@@ -144,7 +149,7 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
 
     if ((lastRowIndex + 1) % ADDING_MORE_ROWS_THRESHOLD_DIVISOR === 0)
       setCanAddMore(false)
-  };
+  }
 
   const stateValue = {
     sheet,
