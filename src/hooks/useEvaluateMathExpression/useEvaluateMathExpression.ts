@@ -1,4 +1,4 @@
-import { SpreadSheetType } from "@/context/SpreadSheetContext/types"
+import { SpreadSheetType } from "@/types"
 
 type EvaluatedResult = {
   result: number
@@ -13,22 +13,36 @@ const _isNotOperator = (component: string) =>
 
 const _detectCircularDependency = (
   id: string,
-  components: string[],
+  fieldComponents: string[],
   dependencies: Set<string>
 ) => {
   const circularDepedencyFields: string[] = []
+  const [row, column] = id.split('-').map(i => parseInt(i))
+  const refrence = _reverseRefrence([row, column])
 
-  if (components.includes(id))
-    circularDepedencyFields.push(id)
+  if (fieldComponents.includes(refrence))
+    circularDepedencyFields.push(refrence)
 
   if (!dependencies.size)
     return circularDepedencyFields
 
-  for (const component of components)
+  for (const component of fieldComponents)
     if (dependencies.has(component))
       circularDepedencyFields.push(component)
 
   return circularDepedencyFields
+}
+
+const _parseRefrence = (refrence: string): [number, number] => {
+  const letter = refrence.match(/[A-Za-z]+/)?.[0] || ''
+  const numeric = refrence.match(/\d+/)?.[0] || ''
+  const parsedNumber = letter.length === 1 ? letter.toUpperCase().charCodeAt(0) - 65 : 26
+  return [parsedNumber, parseInt(numeric, 10)]
+}
+
+const _reverseRefrence = ([row, column]: [number, number]): string => {
+  const letter = column < 26 ? String.fromCharCode(column + 65) : 'Z'
+  return `${letter}${row}`
 }
 
 export const useEvaluateMathExpression = () => {
@@ -140,12 +154,15 @@ export const useEvaluateMathExpression = () => {
 
     for (const component of components) {
       if (typeof component === 'string' && _isNotOperator(component)) {
-        const [column, row] = component.split(/(\d+)/)
-        if (!row)
+        const [column, row] = _parseRefrence(component)
+
+        if (!row && row != 0)
           throw new Error(`Invalid expression: Field ${component} is missing row number`)
 
-        const fieldValue = sheet[column][row as unknown as number]?.display
+        const fieldValue = +sheet[row][column]?.display
 
+        if (sheet[row][column].error)
+          throw new Error(`Invalid expression: Field ${component} has error`)
         if (!fieldValue && fieldValue != 0)
           throw new Error(`Invalid expression: Field ${component} is empty`)
         if (!parseInt(`${fieldValue}`) && fieldValue != 0)

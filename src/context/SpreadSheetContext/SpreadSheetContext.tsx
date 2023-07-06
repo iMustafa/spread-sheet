@@ -1,4 +1,4 @@
-import React, { useContext, createContext, useState } from "react"
+import React, { useContext, createContext, useState, useEffect } from "react"
 import { useSetState } from "react-use"
 import { useEvaluateMathExpression, useWatchAndUpdateSheet } from '@/hooks'
 import { SpreadSheetFieldState, SpreadSheetType } from '@/types/sheet.types'
@@ -7,7 +7,7 @@ interface SpreadSheetStateValue {
   sheet: SpreadSheetType
   canAddMore: boolean
   handleUpdateDependants: (id: string) => void
-  handleUpdateField: (column: string, row: number, value: string) => void
+  handleUpdateField: (row: number, column: number, value: string) => void
   handleAddMoreRows: (n: number) => void
 }
 
@@ -16,14 +16,21 @@ interface Props {
 }
 
 const ADDING_MORE_ROWS_THRESHOLD_DIVISOR = 25
-const GENERATE_DUMMY_FIELD = (n: number, column: string, beginIndex = 0): SpreadSheetFieldState[] => {
-  return Array.from({ length: n }, (_, i) => ({
-    id: `${column}${i + beginIndex}`,
-    value: '',
-    display: '',
-    touched: false,
-    error: false
-  }))
+const GENERATE_DUMMY_FIELDS = (rows: number, columns: number): SpreadSheetFieldState[][] => {
+  const fields: SpreadSheetFieldState[][] = []
+  for (let i = 0; i < rows; i++) {
+    fields.push([])
+    for (let j = 0; j < columns; j++) {
+      fields[i].push({
+        id: `${i}-${j}`,
+        row: i,
+        column: j,
+        value: '',
+        display: '',
+      })
+    }
+  }
+  return fields
 }
 
 export const SpreadSheetContext = createContext({} as SpreadSheetStateValue)
@@ -31,13 +38,9 @@ export const SpreadSheetContext = createContext({} as SpreadSheetStateValue)
 export const SpreadSheetStateProvider = ({ children }: Props) => {
   const { evaluateExpression } = useEvaluateMathExpression()
   const [canAddMore, setCanAddMore] = useState(false)
-  const [lastEditField, setLastEditedField] = useState({ column: '', row: 0 })
+  const [lastEditField, setLastEditedField] = useState({ column: 0, row: 0 })
   const [dependancysMap, setDependancysMap] = useSetState<Record<string, Set<string>>>({})
-  const [sheet, setSheet] = useSetState<SpreadSheetType>({
-    A: GENERATE_DUMMY_FIELD(25, 'A'),
-    B: GENERATE_DUMMY_FIELD(25, 'B'),
-    C: GENERATE_DUMMY_FIELD(25, 'C'),
-  })
+  const [sheet, setSheet] = useState<SpreadSheetType>(GENERATE_DUMMY_FIELDS(100, 3))
 
   useWatchAndUpdateSheet(sheet, lastEditField)
 
@@ -57,15 +60,15 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
   const handleUpdateDependants = (id: string) => {
     if (!dependancysMap[id]) return
     dependancysMap[id].forEach(dependant => {
-      const column = dependant[0]
-      const row = parseInt(dependant.slice(1))
-      const { value } = sheet[column][row]
-      handleUpdateField(column, row, value)
+      const id = dependant[0]
+      const [row, column] = id.split('-').map(i => parseInt(i))
+      const { value } = sheet[row][column]
+      handleUpdateField(row, column, value)
     })
   }
 
-  const handleUpdateField = (column: string, row: number, value: string) => {
-    const id = `${column}${row}`
+  const handleUpdateField = (row: number, column: number, value: string) => {
+    const id = `${row}-${column}`
 
     try {
       let display: any
@@ -81,38 +84,45 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
       }
 
       setSheet(prev => {
-        const updatedColumn = prev[column]
-        updatedColumn[row] = { id, value, display, touched: true, error: false }
-        return { [column]: updatedColumn }
+        const updatedSheet = [...prev]
+        updatedSheet[row][column] = { id, value, display, row, column, touched: true, error: false }
+        return updatedSheet
       })
 
-      setLastEditedField({ column, row })
+      setLastEditedField({ row, column })
 
       if (row / ADDING_MORE_ROWS_THRESHOLD_DIVISOR > 0.7)
         setCanAddMore(true)
 
     } catch (error: any) {
-      setSheet(prev => ({
-        [column]: {
-          ...prev[column],
-          [row]: { id, value, display: error.message, touched: true, error: true }
-        }
-      }))
+      setSheet(prev => {
+        const updatedSheet = [...prev]
+        updatedSheet[row][column] = { id, value, display: error.message, row, column, touched: true, error: true }
+        return updatedSheet
+      })
     }
   }
 
   const handleAddMoreRows = (n: number) => {
     if (!canAddMore) return
-    const lastRowIndex = Object.keys(sheet['A']).length
+    const lastRowIndex = sheet.length - 1
 
     setSheet(prev => {
       const newSheet = { ...prev }
 
-      Object.keys(newSheet).forEach(column => {
-        const updatedColumn = newSheet[column]
-        const newRows = GENERATE_DUMMY_FIELD(n, column, lastRowIndex)
-        newSheet[column] = [...updatedColumn, ...newRows]
-      })
+      for (let i = 0; i < n; i++) {
+        const newRow = []
+        for (let j = 0; j < newSheet[0].length; j++) {
+          newRow.push({
+            id: `${lastRowIndex + i + 1}-${j}`,
+            row: lastRowIndex + i + 1,
+            column: j,
+            value: '',
+            display: '',
+          })
+        }
+        newSheet.push(newRow)
+      }
 
       if (lastRowIndex % ADDING_MORE_ROWS_THRESHOLD_DIVISOR === 0)
         setCanAddMore(false)

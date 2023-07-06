@@ -5,12 +5,11 @@ import { EditIcon } from '@/icons'
 import { SpreadSheetFieldState } from '@/types'
 
 interface Props {
-  column: string
-  row: number
   field: SpreadSheetFieldState
 }
 
-export const SpreadSheetField = React.memo(({ column, row, field }: Props) => {
+export const SpreadSheetField = React.memo(({ field }: Props) => {
+  const { row, column } = field
   const [value, setValue] = useState(field.value)
   const [isEditing, setIsEditting] = useState(false)
   const {
@@ -26,13 +25,13 @@ export const SpreadSheetField = React.memo(({ column, row, field }: Props) => {
     if (value === field.value) {
       return setIsEditting(false)
     }
-    handleUpdateField(column, row, value)
+    handleUpdateField(row, column, value)
     setIsEditting(false)
   }
 
   useEffect(() => {
     handleUpdateDependants(field.id)
-    // console.log('>> Field updated', field.id)
+    console.log(">> Updated field", field.id)
   }, [field])
 
   return (

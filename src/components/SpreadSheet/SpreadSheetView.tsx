@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { Input, Flex, Text, Box } from '@/design-system'
+import { Input, Flex, Text, Box, Grid } from '@/design-system'
 import { useSpreadSheetContext } from '@/context'
 import { useIntersectionObserver } from '@/hooks'
 import { SpreadSheetField } from './SpreadSheetField'
@@ -26,30 +26,21 @@ export const SpreadSheetView = () => {
         <Input type='text' placeholder='Type a search query to filter' />
       </Flex>
 
-      <Flex
+      <Grid
         mt={30}
         width='100%'
         borderRadius={8}
         overflow='hidden'
+        gridTemplateColumns='repeat(3, minmax(100px, 1fr))'
       >
         {
-          Object.keys(sheet).map(column => (
-            <Flex flex={1} flexDirection='column' key={column}>
-              {
-                Object.keys(sheet[column]).map((row) => (
-                  <SpreadSheetField
-                    row={parseInt(row)}
-                    column={column}
-                    key={sheet[column][parseInt(row)].id}
-                    field={sheet[column][parseInt(row)]}
-                  />
-                ))
-              }
-            </Flex>
+          sheet?.map((_row, rowIndex) => (
+            sheet[rowIndex].map((field) => (
+              <SpreadSheetField key={field.id} field={field} />
+            ))
           ))
         }
-
-      </Flex>
+      </Grid>
 
       <Flex justifyContent='center' ref={ref}>
         {
