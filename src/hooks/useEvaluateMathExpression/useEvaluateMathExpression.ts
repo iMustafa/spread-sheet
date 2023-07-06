@@ -1,4 +1,5 @@
 import { SpreadSheetType } from "@/types"
+import { _parseRowAndColumnToReference, _parseRefrenceToRowAndColumn } from "@/utils"
 
 type EvaluatedResult = {
   result: number
@@ -18,7 +19,7 @@ const _detectCircularDependency = (
 ) => {
   const circularDepedencyFields: string[] = []
   const [row, column] = id.split('-').map(i => parseInt(i))
-  const refrence = _reverseRefrence([row, column])
+  const refrence = _parseRowAndColumnToReference([row, column])
 
   if (fieldComponents.includes(refrence))
     circularDepedencyFields.push(refrence)
@@ -27,23 +28,12 @@ const _detectCircularDependency = (
     return circularDepedencyFields
 
   for (const component of fieldComponents)
-    if (dependencies.has(component))
+    if (dependencies.has(id))
       circularDepedencyFields.push(component)
 
   return circularDepedencyFields
 }
 
-const _parseRefrence = (refrence: string): [number, number] => {
-  const letter = refrence.match(/[A-Za-z]+/)?.[0] || ''
-  const numeric = refrence.match(/\d+/)?.[0] || ''
-  const parsedNumber = letter.length === 1 ? letter.toUpperCase().charCodeAt(0) - 65 : 26
-  return [parsedNumber, parseInt(numeric, 10)]
-}
-
-const _reverseRefrence = ([row, column]: [number, number]): string => {
-  const letter = column < 26 ? String.fromCharCode(column + 65) : 'Z'
-  return `${letter}${row}`
-}
 
 export const useEvaluateMathExpression = () => {
 
@@ -154,21 +144,21 @@ export const useEvaluateMathExpression = () => {
 
     for (const component of components) {
       if (typeof component === 'string' && _isNotOperator(component)) {
-        const [column, row] = _parseRefrence(component)
+        const [column, row] = _parseRefrenceToRowAndColumn(component)
 
         if (!row && row != 0)
           throw new Error(`Invalid expression: Field ${component} is missing row number`)
 
-        const fieldValue = +sheet[row][column]?.display
+        const fieldValue = sheet[row][column]?.display
 
+        if (!fieldValue && fieldValue != '0')
+          throw new Error(`Invalid expression: Field ${component} is empty`)
         if (sheet[row][column].error)
           throw new Error(`Invalid expression: Field ${component} has error`)
-        if (!fieldValue && fieldValue != 0)
-          throw new Error(`Invalid expression: Field ${component} is empty`)
-        if (!parseInt(`${fieldValue}`) && fieldValue != 0)
+        if (!parseInt(`${fieldValue}`) && +fieldValue != 0)
           throw new Error(`Invalid expression: Field ${component} is not a number`)
 
-        const variableData = [fieldValue]
+        const variableData = [+fieldValue]
         stack.push(...variableData)
       } else {
         while (

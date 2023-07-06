@@ -1,7 +1,8 @@
-import React, { useContext, createContext, useState, useEffect } from "react"
+import React, { useContext, createContext, useState } from "react"
 import { useSetState } from "react-use"
 import { useEvaluateMathExpression, useWatchAndUpdateSheet } from '@/hooks'
 import { SpreadSheetFieldState, SpreadSheetType } from '@/types/sheet.types'
+import { _parseRowAndColumnToReference, _parseRefrenceToRowAndColumn } from "@/utils"
 
 interface SpreadSheetStateValue {
   sheet: SpreadSheetType
@@ -39,29 +40,31 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
   const { evaluateExpression } = useEvaluateMathExpression()
   const [canAddMore, setCanAddMore] = useState(false)
   const [lastEditField, setLastEditedField] = useState({ column: 0, row: 0 })
+
+  // { [reference: string]: Set<row-column> }
   const [dependancysMap, setDependancysMap] = useSetState<Record<string, Set<string>>>({})
   const [sheet, setSheet] = useState<SpreadSheetType>(GENERATE_DUMMY_FIELDS(100, 3))
 
   useWatchAndUpdateSheet(sheet, lastEditField)
 
-  const handleUpdateDepenciesMap = (id: string, dependencies?: string[]) => {
+  const handleUpdateDepenciesMap = (reference: string, dependencies?: string[]) => {
     if (!dependencies) return
     for (const dependency of dependencies) {
       const dependants = new Set(dependancysMap[dependency] ?? [])
-      dependants.add(id)
+      dependants.add(reference)
       setDependancysMap(() => ({
         [dependency]: dependants
       }))
     }
   }
 
-  // TODO: Invisible bug to solve if I have time
+  // TODO: Invisible bug to solve if I have time [Slight Performance Toll]
   // Remove the dependency from the dependants when they're no longer related
   const handleUpdateDependants = (id: string) => {
-    if (!dependancysMap[id]) return
-    dependancysMap[id].forEach(dependant => {
-      const id = dependant[0]
-      const [row, column] = id.split('-').map(i => parseInt(i))
+    const reference = _parseRowAndColumnToReference(id)
+    if (!dependancysMap[reference]) return
+    dependancysMap[reference].forEach(dependantId => {
+      const [row, column] = dependantId.split('-').map(i => parseInt(i))
       const { value } = sheet[row][column]
       handleUpdateField(row, column, value)
     })
@@ -69,23 +72,26 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
 
   const handleUpdateField = (row: number, column: number, value: string) => {
     const id = `${row}-${column}`
+    const reference = _parseRowAndColumnToReference(id)
 
     try {
       let display: any
+      let hasFormula = false
 
       if (value?.startsWith('=')) {
-        const { result, dependencies } = evaluateExpression(id, value, sheet, dependancysMap[id] ?? new Set())
+        const { result, dependencies } = evaluateExpression(id, value, sheet, dependancysMap[reference] ?? new Set())
         if (dependencies)
           handleUpdateDepenciesMap(id, dependencies)
 
         display = result
+        hasFormula = true
       } else {
         display = +value ? parseInt(value) : value
       }
 
       setSheet(prev => {
         const updatedSheet = [...prev]
-        updatedSheet[row][column] = { id, value, display, row, column, touched: true, error: false }
+        updatedSheet[row][column] = { id, value, display, row, column, hasFormula, touched: true, hasError: false }
         return updatedSheet
       })
 
@@ -97,7 +103,7 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
     } catch (error: any) {
       setSheet(prev => {
         const updatedSheet = [...prev]
-        updatedSheet[row][column] = { id, value, display: error.message, row, column, touched: true, error: true }
+        updatedSheet[row][column] = { id, value, display: error.message, row, column, touched: true, hasError: true }
         return updatedSheet
       })
     }

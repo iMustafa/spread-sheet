@@ -22,16 +22,14 @@ export const SpreadSheetField = React.memo(({ field }: Props) => {
   }
 
   const handleBlur = () => {
-    if (value === field.value) {
+    if (value === field.value)
       return setIsEditting(false)
-    }
     handleUpdateField(row, column, value)
     setIsEditting(false)
   }
 
   useEffect(() => {
     handleUpdateDependants(field.id)
-    console.log(">> Updated field", field.id)
   }, [field])
 
   return (

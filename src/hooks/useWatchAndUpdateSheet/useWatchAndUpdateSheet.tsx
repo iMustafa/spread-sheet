@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useSetState } from 'react-use'
 import { useQuery, useMutation } from 'react-query'
 import { SheetsProvider } from '@/providers/sheet.provider'
@@ -10,7 +10,6 @@ import {
 } from '@/types'
 
 interface SavableSheet {
-  heads: string[]
   values: string[]
   blob: string
 }
@@ -21,14 +20,41 @@ export const useWatchAndUpdateSheet = (
 ) => {
   const [canSaveAgain, setCanSaveAgain] = useState(false)
   const [activeSaveId, setActiveSaveId] = useState<string>("")
+
+  const headers = useMemo<string[]>(() => {
+    const alphabets: string[] = []
+    for (let i = 0; i < sheet[0].length; i++) {
+      alphabets.push(String.fromCharCode(65 + i))
+    }
+    return alphabets
+  }, [sheet[0].length])
+
   const [savableSheet, setSavableSheet] = useSetState<SavableSheet>({
-    heads: [],
     values: [],
     blob: ''
   })
 
+  const generateCSVString = () => {
+    const rows = [headers.join(",")]
+    const lastEditedRow = lastEditField.row
+
+    for (let i = 0; i < lastEditedRow + 1; i++) {
+      const row = sheet[i]
+      const formattedRow = row.map((row) => {
+        const { display: displayedValue, hasError } = row
+        if (hasError) return ""
+        if (typeof displayedValue === "string" && displayedValue.includes(","))
+          return `"${displayedValue}"`
+        return displayedValue
+      })
+      rows.push(formattedRow.join(","))
+    }
+
+    return rows.join("\n")
+  }
+
   const prepareSheetForUpdateAndDownload = () => {
-    // console.log(sheet)
+    const csv = generateCSVString()
   }
 
   const { data } = useQuery(
@@ -56,7 +82,7 @@ export const useWatchAndUpdateSheet = (
 
   useEffect(() => {
     prepareSheetForUpdateAndDownload()
-  }, [sheet])
+  }, [lastEditField])
 
   return {
 

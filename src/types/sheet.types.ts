@@ -5,7 +5,8 @@ export interface SpreadSheetFieldState {
   row: number
   column: number
   touched?: boolean
-  error?: boolean
+  hasError?: boolean
+  hasFormula?: boolean
 }
 
 export type SpreadSheetType = SpreadSheetFieldState[][]
