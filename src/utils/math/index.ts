@@ -62,8 +62,7 @@ export class MathParser {
 
     for (let i = 0; i < sanitizedExpression.length; i++) {
       const char = sanitizedExpression[i]
-
-      if (/[0-9.]/.test(char)) {
+      if (/[0-9.-]/.test(char)) {
         currentNumber += char
         if (i === sanitizedExpression.length - 1 || !/[0-9.]/.test(sanitizedExpression[i + 1])) {
           components.push(parseFloat(currentNumber))
@@ -83,9 +82,9 @@ export class MathParser {
         components.push(char)
       }
     }
-
     return components
   }
+
 
   public static evaluateExpression(
     id: string,

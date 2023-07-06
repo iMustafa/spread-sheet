@@ -12,9 +12,12 @@ export function _parseRowAndColumnToReference(id: string): string
 export function _parseRowAndColumnToReference([row, column]: [number, number]): string
 export function _parseRowAndColumnToReference(payload: [number, number] | string): string {
   const [row, column] =
-    typeof payload === 'string' ?
-      payload.split('-').map(i => parseInt(i)) :
-      payload
-  const letter = String.fromCharCode(column + 65)
+    typeof payload === 'string'
+      ? payload.split('-').map(i => parseInt(i))
+      : payload;
+  const letter =
+    column >= 26
+      ? String.fromCharCode(Math.floor(column / 26) + 64) + String.fromCharCode((column % 26) + 65)
+      : String.fromCharCode(column + 65)
   return `${letter}${row}`
 }
