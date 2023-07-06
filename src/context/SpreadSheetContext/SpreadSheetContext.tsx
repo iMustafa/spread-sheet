@@ -86,7 +86,7 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
         display = result
         hasFormula = true
       } else {
-        display = +value ? parseInt(value) : value
+        display = +value ? parseFloat(value) : value
       }
 
       setSheet(prev => {

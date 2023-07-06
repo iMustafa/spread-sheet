@@ -153,7 +153,7 @@ export const useEvaluateMathExpression = () => {
 
         if (!fieldValue && fieldValue != '0')
           throw new Error(`Invalid expression: Field ${component} is empty`)
-        if (sheet[row][column].error)
+        if (sheet[row][column].hasError)
           throw new Error(`Invalid expression: Field ${component} has error`)
         if (!parseInt(`${fieldValue}`) && +fieldValue != 0)
           throw new Error(`Invalid expression: Field ${component} is not a number`)
