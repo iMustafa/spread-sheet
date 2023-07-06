@@ -1,43 +1,37 @@
-import { SpreadSheetType } from "@/types"
-import { _parseRowAndColumnToReference, _parseRefrenceToRowAndColumn } from "@/utils"
+import { SpreadSheetType } from '@/types'
+import { _parseRowAndColumnToReference, _parseRefrenceToRowAndColumn } from '../expressions'
 
-type EvaluatedResult = {
-  result: number
-  dependencies: any[]
-}
+export class MathParser {
+  private static _isNotOperator(component: string) {
+    return component !== '+' &&
+      component !== '-' &&
+      component !== '*' &&
+      component !== '/'
+  }
 
-const _isNotOperator = (component: string) =>
-  component !== '+' &&
-  component !== '-' &&
-  component !== '*' &&
-  component !== '/'
+  private static _detectCircularDependency(
+    id: string,
+    fieldComponents: string[],
+    dependencies: Set<string>
+  ) {
+    const circularDepedencyFields: string[] = []
+    const [row, column] = id.split('-').map(i => parseInt(i))
+    const refrence = _parseRowAndColumnToReference([row, column])
 
-const _detectCircularDependency = (
-  id: string,
-  fieldComponents: string[],
-  dependencies: Set<string>
-) => {
-  const circularDepedencyFields: string[] = []
-  const [row, column] = id.split('-').map(i => parseInt(i))
-  const refrence = _parseRowAndColumnToReference([row, column])
+    if (fieldComponents.includes(refrence))
+      circularDepedencyFields.push(refrence)
 
-  if (fieldComponents.includes(refrence))
-    circularDepedencyFields.push(refrence)
+    if (!dependencies.size)
+      return circularDepedencyFields
 
-  if (!dependencies.size)
+    for (const component of fieldComponents)
+      if (dependencies.has(id))
+        circularDepedencyFields.push(component)
+
     return circularDepedencyFields
+  }
 
-  for (const component of fieldComponents)
-    if (dependencies.has(id))
-      circularDepedencyFields.push(component)
-
-  return circularDepedencyFields
-}
-
-
-export const useEvaluateMathExpression = () => {
-
-  const validateExpression = (expression: string): string => {
+  public static validateExpression(expression: string): string {
     const sanitizedExpression = expression.replace(/[^0-9+\-*/().A-Za-z_]/g, '')
     const consecutiveOperatorRegex = /[-+*/]{2}/g
     const alphabeticLetterWithFloatingPointRegex = /[A-Za-z_]\d*\.\d+/g
@@ -59,7 +53,7 @@ export const useEvaluateMathExpression = () => {
     return ""
   }
 
-  const parseExpression = (expression: string): (number | string)[] => {
+  public static parseExpression(expression: string): (number | string)[] {
     const sanitizedExpression = expression.replace(/[^0-9+\-*/().A-Za-z_]/g, '')
 
     const components: (number | string)[] = []
@@ -93,20 +87,20 @@ export const useEvaluateMathExpression = () => {
     return components
   }
 
-  const evaluateExpression = (
+  public static evaluateExpression(
     id: string,
     expression: string,
     sheet: SpreadSheetType,
     dependencies: Set<string>
-  ): EvaluatedResult => {
-    const isInValidExpressionException = validateExpression(expression)
+  ): { result: number, dependencies: any[] } {
+    const isInValidExpressionException = this.validateExpression(expression)
     if (isInValidExpressionException) throw new Error(isInValidExpressionException)
 
-    const components = parseExpression(expression)
+    const components = this.parseExpression(expression)
     const fieldComponents = components
-      .filter(component => typeof component === 'string' && _isNotOperator(component)) as string[]
+      .filter(component => typeof component === 'string' && this._isNotOperator(component)) as string[]
 
-    const circularDepedencyFields = _detectCircularDependency(id, fieldComponents, dependencies)
+    const circularDepedencyFields = this._detectCircularDependency(id, fieldComponents, dependencies)
     if (circularDepedencyFields.length)
       throw new Error(`Invalid expression: Circular dependency ${circularDepedencyFields.join(', ')}`)
 
@@ -135,7 +129,6 @@ export const useEvaluateMathExpression = () => {
           result = leftOperand / rightOperand
           break
         default:
-          console.error(`Invalid operator: ${operator}`)
           return NaN
       }
 
@@ -143,7 +136,7 @@ export const useEvaluateMathExpression = () => {
     }
 
     for (const component of components) {
-      if (typeof component === 'string' && _isNotOperator(component)) {
+      if (typeof component === 'string' && this._isNotOperator(component)) {
         const [column, row] = _parseRefrenceToRowAndColumn(component)
 
         if (!row && row != 0)
@@ -155,7 +148,7 @@ export const useEvaluateMathExpression = () => {
           throw new Error(`Invalid expression: Field ${component} is empty`)
         if (sheet[row][column].hasError)
           throw new Error(`Invalid expression: Field ${component} has error`)
-        if (!parseInt(`${fieldValue}`) && +fieldValue != 0)
+        if (isNaN(Number(fieldValue)) && +fieldValue != 0)
           throw new Error(`Invalid expression: Field ${component} is not a number`)
 
         const variableData = [+fieldValue]
@@ -184,12 +177,5 @@ export const useEvaluateMathExpression = () => {
     } else {
       throw new Error('Invalid expression: Expression could not be evaluated')
     }
-  }
-
-
-  return {
-    parseExpression,
-    validateExpression,
-    evaluateExpression
   }
 }

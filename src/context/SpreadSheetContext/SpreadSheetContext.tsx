@@ -1,8 +1,12 @@
 import React, { useContext, createContext, useState } from "react"
 import { useSetState } from "react-use"
-import { useEvaluateMathExpression, useWatchAndUpdateSheet } from '@/hooks'
+import { useWatchAndUpdateSheet } from '@/hooks'
 import { SpreadSheetFieldState, SpreadSheetType } from '@/types/sheet.types'
-import { _parseRowAndColumnToReference, _parseRefrenceToRowAndColumn } from "@/utils"
+import {
+  MathParser,
+  _parseRowAndColumnToReference,
+  _parseRefrenceToRowAndColumn
+} from "@/utils"
 
 interface SpreadSheetStateValue {
   sheet: SpreadSheetType
@@ -37,7 +41,7 @@ const GENERATE_DUMMY_FIELDS = (rows: number, columns: number): SpreadSheetFieldS
 export const SpreadSheetContext = createContext({} as SpreadSheetStateValue)
 
 export const SpreadSheetStateProvider = ({ children }: Props) => {
-  const { evaluateExpression } = useEvaluateMathExpression()
+
   const [canAddMore, setCanAddMore] = useState(false)
   const [lastEditField, setLastEditedField] = useState({ column: 0, row: 0 })
 
@@ -75,18 +79,23 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
     const reference = _parseRowAndColumnToReference(id)
 
     try {
-      let display: any
+      let display: string
       let hasFormula = false
 
       if (value?.startsWith('=')) {
-        const { result, dependencies } = evaluateExpression(id, value, sheet, dependancysMap[reference] ?? new Set())
+        const { result, dependencies } = MathParser.evaluateExpression(
+          id,
+          value,
+          sheet,
+          dependancysMap[reference] ?? new Set()
+        )
         if (dependencies)
           handleUpdateDepenciesMap(id, dependencies)
 
-        display = result
+        display = result.toString()
         hasFormula = true
       } else {
-        display = +value ? parseFloat(value) : value
+        display = +value ? parseFloat(value).toString() : value
       }
 
       setSheet(prev => {

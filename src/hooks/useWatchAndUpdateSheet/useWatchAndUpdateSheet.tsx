@@ -57,29 +57,6 @@ export const useWatchAndUpdateSheet = (
     const csv = generateCSVString()
   }
 
-  const { data } = useQuery(
-    'getSheetStatus',
-    () => SheetsProvider.getStatus(activeSaveId),
-    {
-      enabled: !!activeSaveId,
-      onSuccess: (status: SheetStatus) => {
-        console.log('>> [GET STATUS] RECEIVED STATUS', status)
-      }
-    }
-  )
-
-  const updateSheet = useMutation(
-    (spreadSheet: string) => SheetsProvider.updateSheet(spreadSheet),
-    {
-      retry: true,
-      retryDelay: 0,
-      onSuccess: (status) => {
-        console.log('>> [SAVE] RECEIVED STATUS', status)
-      }
-    }
-  )
-
-
   useEffect(() => {
     prepareSheetForUpdateAndDownload()
   }, [lastEditField])
