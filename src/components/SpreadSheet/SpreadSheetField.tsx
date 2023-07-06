@@ -34,13 +34,12 @@ export const SpreadSheetField = React.memo(({ field }: Props) => {
 
   return (
     <Flex
-      py={isEditing ? 11 : 15}
-      width='100%'
       minWidth='100px'
       bg='bg/action-minor'
       border='1px solid #000'
       justifyContent='center'
       alignItems='center'
+      height={40}
       position='relative'
     >
 
