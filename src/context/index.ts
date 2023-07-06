@@ -1,1 +1,1 @@
-export { useSpreadSheetContext } from './SpreadSheetContext/Context'
+export { useSpreadSheetContext } from './SpreadSheetContext/SpreadSheetContext'

@@ -15,7 +15,7 @@ export const SpreadSheetView = () => {
   useIntersectionObserver({
     targetRef: ref,
     handler: () => {
-      handleAddMoreRows(4)
+      handleAddMoreRows(10)
     },
     options: { rootMargin: '0px' }
   })

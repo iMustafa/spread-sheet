@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Flex, Text, UnStyledInput, UnStyledButton } from '@/design-system'
 import { useSpreadSheetContext } from '@/context'
 import { EditIcon } from '@/icons'
-import { SpreadSheetFieldState } from '@/context/SpreadSheetContext/types'
+import { SpreadSheetFieldState } from '@/types'
 
 interface Props {
   column: string
@@ -32,7 +32,7 @@ export const SpreadSheetField = React.memo(({ column, row, field }: Props) => {
 
   useEffect(() => {
     handleUpdateDependants(field.id)
-    console.log('>> Field updated', field.id)
+    // console.log('>> Field updated', field.id)
   }, [field])
 
   return (
