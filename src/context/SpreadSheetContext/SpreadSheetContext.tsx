@@ -20,7 +20,7 @@ interface Props {
   children: React.ReactNode
 }
 
-const ADDING_MORE_ROWS_THRESHOLD_DIVISOR = 25
+const ADDING_MORE_ROWS_THRESHOLD_DIVISOR = 30
 const GENERATE_DUMMY_FIELDS = (rows: number, columns: number): SpreadSheetFieldState[][] => {
   const fields: SpreadSheetFieldState[][] = []
   for (let i = 0; i < rows; i++) {
@@ -47,7 +47,7 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
 
   // { [reference: string]: Set<row-column> }
   const [dependancysMap, setDependancysMap] = useSetState<Record<string, Set<string>>>({})
-  const [sheet, setSheet] = useState<SpreadSheetType>(GENERATE_DUMMY_FIELDS(100, 3))
+  const [sheet, setSheet] = useState<SpreadSheetType>(GENERATE_DUMMY_FIELDS(ADDING_MORE_ROWS_THRESHOLD_DIVISOR, 3))
 
   useWatchAndUpdateSheet(sheet, lastEditField)
 
@@ -106,7 +106,7 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
 
       setLastEditedField({ row, column })
 
-      if (row / ADDING_MORE_ROWS_THRESHOLD_DIVISOR > 0.7)
+      if (row / ADDING_MORE_ROWS_THRESHOLD_DIVISOR > 0.8)
         setCanAddMore(true)
 
     } catch (error: any) {
@@ -119,32 +119,32 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
   }
 
   const handleAddMoreRows = (n: number) => {
-    if (!canAddMore) return
-    const lastRowIndex = sheet.length - 1
+    if (!canAddMore) return;
+    const lastRowIndex = sheet.length - 1;
 
+    // O(n+m) n=rowsToAdd, m=columnsAlreadyPresent
     setSheet(prev => {
-      const newSheet = { ...prev }
+      const newSheet = [...prev]
+      const newRow = []
 
-      for (let i = 0; i < n; i++) {
-        const newRow = []
-        for (let j = 0; j < newSheet[0].length; j++) {
-          newRow.push({
-            id: `${lastRowIndex + i + 1}-${j}`,
-            row: lastRowIndex + i + 1,
-            column: j,
-            value: '',
-            display: '',
-          })
-        }
-        newSheet.push(newRow)
-      }
+      for (let j = 0; j < newSheet[0].length; j++)
+        newRow.push({
+          id: `${lastRowIndex + 1}-${j}`,
+          row: lastRowIndex + 1,
+          column: j,
+          value: '',
+          display: '',
+        })
 
-      if (lastRowIndex % ADDING_MORE_ROWS_THRESHOLD_DIVISOR === 0)
-        setCanAddMore(false)
+      for (let i = 0; i < n; i++)
+        newSheet.push([...newRow])
 
       return newSheet
     })
-  }
+
+    if ((lastRowIndex + 1) % ADDING_MORE_ROWS_THRESHOLD_DIVISOR === 0)
+      setCanAddMore(false)
+  };
 
   const stateValue = {
     sheet,

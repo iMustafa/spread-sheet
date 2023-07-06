@@ -46,7 +46,7 @@ export const SpreadSheetView = () => {
         {
           !canAddMore && (
             <Text variation='title'>
-              Recently added fields were not touched.
+              Will add more rows when you change a field in the bottom 20% of the sheet and scroll down
             </Text>
           )
         }
