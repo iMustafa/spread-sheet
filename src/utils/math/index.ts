@@ -1,5 +1,5 @@
 import { SpreadSheetType } from '@/types'
-import { _parseRowAndColumnToReference, _parseRefrenceToRowAndColumn } from '../expressions'
+import { parseRowAndColumnToReference, parseRefrenceToRowAndColumn } from '../expressions'
 
 export class MathParser {
   private static _isNotOperator(component: string) {
@@ -16,7 +16,7 @@ export class MathParser {
   ) {
     const circularDepedencyFields: string[] = []
     const [row, column] = id.split('-').map(i => parseInt(i))
-    const refrence = _parseRowAndColumnToReference([row, column])
+    const refrence = parseRowAndColumnToReference([row, column])
 
     if (fieldComponents.includes(refrence))
       circularDepedencyFields.push(refrence)
@@ -136,7 +136,7 @@ export class MathParser {
 
     for (const component of components) {
       if (typeof component === 'string' && this._isNotOperator(component)) {
-        const [column, row] = _parseRefrenceToRowAndColumn(component)
+        const [column, row] = parseRefrenceToRowAndColumn(component)
 
         if (!row && row != 0)
           throw new Error(`Invalid expression: Field ${component} is missing row number`)

@@ -8,3 +8,7 @@ export interface SheetUpdateStatus {
   done_at?: string
   status: SheetStatus
 }
+
+export interface SheetUpdateStatusTimeout extends SheetUpdateStatus {
+  timeout?: number
+}

@@ -1,2 +1,7 @@
-export * from './expressions'
+export {
+  parseRefrenceToRowAndColumn,
+  parseRowAndColumnToReference
+} from './expressions'
 export { MathParser } from './math'
+export { generateCSVString } from './csv'
+export { getTimeDifferenceInMilliseconds } from './date-time'

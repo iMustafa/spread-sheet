@@ -1,5 +1,5 @@
-import React, { useRef } from 'react'
-import { Input, Flex, Text, Box, Grid } from '@/design-system'
+import React, { useMemo, useRef } from 'react'
+import { Input, Flex, Text, Box, Grid, LoadingSpinner, Button } from '@/design-system'
 import { useSpreadSheetContext } from '@/context'
 import { useIntersectionObserver } from '@/hooks'
 import { SpreadSheetField } from './SpreadSheetField'
@@ -9,8 +9,15 @@ export const SpreadSheetView = () => {
   const {
     sheet,
     canAddMore,
+    isUpdating,
+    handleGenerateCSVDownloadLink,
     handleAddMoreRows,
   } = useSpreadSheetContext()
+
+  const downloadCSVUrl = useMemo(() => {
+    const url = handleGenerateCSVDownloadLink()
+    return url
+  }, [sheet])
 
   useIntersectionObserver({
     targetRef: ref,
@@ -22,9 +29,23 @@ export const SpreadSheetView = () => {
 
   return (
     <Box>
+      {
+        isUpdating && (
+          <Flex alignItems='center' my={2}>
+            <LoadingSpinner />
+            <Text ml={2} variation='label-minor'>Saving your changes...</Text>
+          </Flex>
+        )
+      }
       <Flex flex={1}>
         <Input type='text' placeholder='Type a search query to filter' />
       </Flex>
+
+      <Box my={2}>
+        <Button as='a' href={downloadCSVUrl}>
+          Download CSV
+        </Button>
+      </Box>
 
       <Grid
         mt={30}

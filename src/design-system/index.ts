@@ -1,5 +1,5 @@
 export * from './Box/Box'
 export { Button, UnStyledButton } from './Button/Button'
 export { Text } from './Text/Text'
-export { SkeletonLoadingBar } from './Loader/Skeleton'
+export { LoadingSpinner } from './Loader/Spinning'
 export * from './Form'

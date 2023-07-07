@@ -2,15 +2,13 @@ import React, { useContext, createContext, useState } from "react"
 import { useSetState } from "react-use"
 import { useWatchAndUpdateSheet } from '@/hooks'
 import { SpreadSheetFieldState, SpreadSheetType } from '@/types/sheet.types'
-import {
-  MathParser,
-  _parseRowAndColumnToReference,
-  _parseRefrenceToRowAndColumn
-} from "@/utils"
+import { MathParser, parseRowAndColumnToReference } from "@/utils"
 
 interface SpreadSheetStateValue {
   sheet: SpreadSheetType
   canAddMore: boolean
+  isUpdating: boolean
+  handleGenerateCSVDownloadLink: () => string
   handleUpdateDependants: (id: string) => void
   handleUpdateField: (row: number, column: number, value: string) => void
   handleAddMoreRows: (n: number) => void
@@ -41,7 +39,7 @@ const GENERATE_DUMMY_FIELDS = (rows: number, columns: number): SpreadSheetFieldS
 export const SpreadSheetContext = createContext({} as SpreadSheetStateValue)
 
 export const SpreadSheetStateProvider = ({ children }: Props) => {
-
+  const [initialzed, setInitialized] = useState(false)
   const [canAddMore, setCanAddMore] = useState(false)
   const [lastEditField, setLastEditedField] = useState({ column: 0, row: 0, maxRow: 0 })
 
@@ -49,7 +47,10 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
   const [dependancysMap, setDependancysMap] = useSetState<Record<string, Set<string>>>({})
   const [sheet, setSheet] = useState<SpreadSheetType>(GENERATE_DUMMY_FIELDS(ADDING_MORE_ROWS_THRESHOLD_DIVISOR, 3))
 
-  useWatchAndUpdateSheet(sheet, lastEditField)
+  const {
+    isUpdating,
+    handleGenerateCSVDownloadLink
+  } = useWatchAndUpdateSheet(sheet, lastEditField, initialzed)
 
   const handleUpdateDepenciesMap = (reference: string, dependencies?: string[]) => {
     if (!dependencies) return
@@ -65,7 +66,7 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
   // TODO: Invisible bug to solve if I have time [Slight Performance Toll]
   // Remove the dependency from the dependants when they're no longer related
   const handleUpdateDependants = (id: string) => {
-    const reference = _parseRowAndColumnToReference(id)
+    const reference = parseRowAndColumnToReference(id)
     if (!dependancysMap[reference]) return
     dependancysMap[reference].forEach(dependantId => {
       const [row, column] = dependantId.split('-').map(i => parseInt(i))
@@ -76,7 +77,7 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
 
   const handleUpdateField = (row: number, column: number, value: string) => {
     const id = `${row}-${column}`
-    const reference = _parseRowAndColumnToReference(id)
+    const reference = parseRowAndColumnToReference(id)
 
     try {
       let display: string
@@ -97,6 +98,10 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
       } else {
         display = +value ? parseFloat(value).toString() : value
       }
+
+      // Prevent save on initial load
+      if (!initialzed)
+        setInitialized(true)
 
       setSheet(prev => {
         const updatedSheet = [...prev]
@@ -154,6 +159,8 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
   const stateValue = {
     sheet,
     canAddMore,
+    isUpdating,
+    handleGenerateCSVDownloadLink,
     handleUpdateField,
     handleUpdateDependants,
     handleAddMoreRows
