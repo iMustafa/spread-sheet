@@ -41,6 +41,6 @@ export const Input = styled(UnStyledInput)`
   border-radius: 5px;
   padding: 7px 32px;
   border: none;
-  background-color: ${bgColorPalette['bg/action-moderate']};
+  background-color: ${bgColorPalette['bg/container-moderate']};
   ${() => Typography['input'] as any}
 `

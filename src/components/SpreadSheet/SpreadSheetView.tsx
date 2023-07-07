@@ -8,6 +8,7 @@ export const SpreadSheetView = () => {
   const ref = useRef<HTMLDivElement>(null)
   const {
     sheet,
+    headers,
     canAddMore,
     handleAddMoreRows,
   } = useSpreadSheetContext()
@@ -51,11 +52,30 @@ export const SpreadSheetView = () => {
       </Box>
 
       <Grid
-        mt={30}
-        width='100%'
+        my={3}
         borderRadius={8}
-        overflow='hidden'
-        gridTemplateColumns='repeat(3, minmax(100px, 1fr))'
+        bg='bg/container-major'
+        gridTemplateColumns={`repeat(${headers.length}, minmax(100px, 1fr))`}
+      >
+        {
+          headers.map((header) => (
+            <Flex
+              key={header}
+              justifyContent='center'
+              alignItems='center'
+              height={40}
+            >
+              <Text variation='label-minor' textAlign='center'>
+                {header}
+              </Text>
+            </Flex>
+          ))
+        }
+      </Grid>
+
+      <Grid
+        borderRadius={8}
+        gridTemplateColumns={`repeat(${headers.length}, minmax(100px, 1fr))`}
       >
         {
           sheet?.map((_row, rowIndex) => (

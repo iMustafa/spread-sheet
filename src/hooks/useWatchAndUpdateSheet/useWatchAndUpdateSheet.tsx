@@ -5,19 +5,12 @@ import { SheetStatus, SheetUpdateStatusTimeout } from '@/types'
 import { useSpreadSheetContext } from '@/context'
 
 export const useWatchAndUpdateSheet = () => {
-  const { sheet, lastEditField, initialzed } = useSpreadSheetContext()
+  const { sheet, headers, lastEditField, initialzed } = useSpreadSheetContext()
 
   const timemout = useRef<NodeJS.Timeout | null>()
   const [canSaveAgain, setCanSaveAgain] = useState(true)
   const [wasUpdatedWhileSaving, setWasUpdatedWhileSaving] = useState(false)
   const [activeSheetProcess, setActiveSheetProcess] = useState<SheetUpdateStatusTimeout>({} as SheetUpdateStatusTimeout)
-
-  const headers = useMemo<string[]>(() => {
-    const alphabets: string[] = []
-    for (let i = 0; i < sheet[0].length; i++)
-      alphabets.push(String.fromCharCode(65 + i))
-    return alphabets
-  }, [sheet[0].length])
 
   const updateSheet = useUpdateSheet({
     retry: true,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Flex, Text, UnStyledInput, UnStyledButton } from '@/design-system'
 import { useSpreadSheetContext } from '@/context'
 import { EditIcon } from '@/icons'
@@ -12,6 +12,15 @@ export const SpreadSheetField = React.memo(({ field }: Props) => {
   const { row, column } = field
   const [value, setValue] = useState(field.value)
   const [isEditing, setIsEditting] = useState(false)
+  const backgroundColor = useMemo(() => {
+    if (field.hasError)
+      return 'bg/error'
+    else if (isEditing)
+      return 'bg/container-moderate'
+    else
+      return 'bg/container-minor'
+  }, [isEditing])
+
   const {
     initialzed,
     handleUpdateField,
@@ -37,13 +46,13 @@ export const SpreadSheetField = React.memo(({ field }: Props) => {
   return (
     <Flex
       minWidth='100px'
-      bg='bg/action-minor'
-      border='1px solid #000'
+      bg={backgroundColor}
       justifyContent='center'
       alignItems='center'
       height={40}
       position='relative'
       data-testid={`spreadsheet-field-${field.id}`}
+      boxShadow='border/on-focus'
     >
 
       {

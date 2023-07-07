@@ -1,4 +1,4 @@
-import React, { useContext, createContext, useState } from "react"
+import React, { useContext, createContext, useState, useMemo } from "react"
 import { useSetState } from "react-use"
 import { SpreadSheetFieldState, SpreadSheetType } from '@/types/sheet.types'
 import { MathParser, parseReferenceToRowAndColumn, parseRowAndColumnToReference } from "@/utils"
@@ -8,6 +8,7 @@ interface SpreadSheetStateValue {
   canAddMore: boolean
   lastEditField: { column: number, row: number, maxRow: number }
   initialzed: boolean
+  headers: string[]
   handleUpdateDependants: (id: string) => void
   handleUpdateField: (row: number, column: number, value: string) => void
   handleAddMoreRows: (n: number) => void
@@ -45,6 +46,12 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
   // { [reference: string]: Set<id: row-column> }
   const [dependancysMap, setDependancysMap] = useSetState<Record<string, Set<string>>>({})
   const [sheet, setSheet] = useState<SpreadSheetType>(GENERATE_DUMMY_FIELDS(ADDING_MORE_ROWS_THRESHOLD_DIVISOR, 3))
+  const headers = useMemo<string[]>(() => {
+    const alphabets: string[] = []
+    for (let i = 0; i < sheet[0].length; i++)
+      alphabets.push(String.fromCharCode(65 + i))
+    return alphabets
+  }, [sheet[0].length])
 
   const handleUpdateDepenciesMap = (reference: string, dependencies?: string[]) => {
     if (!dependencies) return
@@ -89,7 +96,6 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
         hasFormula = true
       } else {
         display = +value ? parseFloat(value).toString() : value
-        console.log('>> SETTING DISPLAY', display)
       }
 
       // Prevent save on initial load
@@ -151,6 +157,7 @@ export const SpreadSheetStateProvider = ({ children }: Props) => {
 
   const stateValue = {
     sheet,
+    headers,
     canAddMore,
     lastEditField,
     initialzed,
