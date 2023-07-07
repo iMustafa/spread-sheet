@@ -1,7 +1,13 @@
 import React from 'react'
+import dynamic from 'next/dynamic'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { Box, Text } from '@/design-system'
-import { SpreadSheet } from '@/components'
+// import { SpreadSheet } from '@/components'
+
+const SpreadSheet = dynamic(
+  () => import('@/components/SpreadSheet/SpreadSheet').then((mod) => mod.SpreadSheet),
+  { ssr: false }
+)
 
 const queryClient = new QueryClient()
 

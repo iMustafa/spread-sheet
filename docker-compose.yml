@@ -1,0 +1,15 @@
+version: '3'
+services:
+  backend:
+    image: stakingrewards/engineering-frontend-challenge:latest
+    ports:
+      - '8082:8081'
+  frontend:
+    build:
+      context: ./
+    restart: on-failure
+    container_name: frontend
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
