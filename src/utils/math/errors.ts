@@ -1,9 +1,8 @@
 export const MATH_ERRORS = {
   INVALID_NON_ALPHANUMERIC_CHARACTER: "Invalid expression: Invalid non-alphanumeric character",
   CONSECUTIVE_OPERATORS: "Invalid expression: Consecutive operators",
-  ALPHABETIC_LETTER_FOLLOWED_BY_A_FLOATING_POINT: "Invalid expression: Alphabetic letter followed by a floating point",
-  CONSECUTIVE_LETTERS: "Invalid expression: Consecutive letters",
   INVALID_EXPRESSION: 'Invalid expression: Expression could not be evaluated',
+  INVALID_REFERENCE: (component: string) => `Invalid expression: Invalid reference ${component}`,
   DEPENDENCY_FIELD_OUT_OF_BOUNDS: (component: string) => `Invalid expression: Field ${component} is out of bounds`,
   CIRCULAR_DEPENDENCY: (components: string[]) => `Invalid expression: Circular dependency detected ${components.join(', ')}`,
   DEPENDENCY_FIELD_MISSING_ROW_NUMBER: (component: string) => `Invalid expression: Field ${component} is missing row number`,

@@ -3,53 +3,55 @@ import { MathParser } from '../index'
 import { MATH_ERRORS } from '../errors'
 
 describe('MathParser', () => {
+  describe('sanatizeExpression', () => {
+    it('Should sanatize an expression', () => {
+      const expression = '2 + 3 * 4'
+      const result = MathParser.sanatizeExpression(expression)
+      expect(result).toBe('2+3*4')
+    })
+  })
+
   describe('validateExpression', () => {
     it('Should return an empty string for a valid expression', () => {
-      const expression = '2 + 3 * 4'
+      const expression = '2+3*4'
       const result = MathParser.validateExpression(expression)
       expect(result).toBe('')
     })
 
     it('Should not accept non-alphanumeric', () => {
-      const expression = '2 + _'
+      const expression = '2+_'
       const result = MathParser.validateExpression(expression)
       expect(result).toBe(MATH_ERRORS.INVALID_NON_ALPHANUMERIC_CHARACTER)
     })
 
     it('Should not accept consecutive operators', () => {
-      const expression = '2 ++ 3'
+      const expression = '2++3'
       const result = MathParser.validateExpression(expression)
       expect(result).toBe(MATH_ERRORS.CONSECUTIVE_OPERATORS)
     })
 
     it('Should not accept floating point after an alphabetic letter', () => {
-      const expression = 'A.5 + 3'
+      const expression = 'A.5+3'
       const result = MathParser.validateExpression(expression)
-      expect(result).toBe(MATH_ERRORS.ALPHABETIC_LETTER_FOLLOWED_BY_A_FLOATING_POINT)
-    })
-
-    it('Should return an error message for expressions with consecutive letters', () => {
-      const expression = '2AB + 3'
-      const result = MathParser.validateExpression(expression)
-      expect(result).toBe(MATH_ERRORS.CONSECUTIVE_LETTERS)
+      expect(result).toBe(MATH_ERRORS.INVALID_REFERENCE('A'))
     })
   })
 
   describe('parseExpression', () => {
     it('Should parse a valid expression into components', () => {
-      const expression = '2 + 3 * 4'
+      const expression = '2+3*4'
       const components = MathParser.parseExpression(expression)
       expect(components).toEqual([2, '+', 3, '*', 4])
     })
 
     it('Should handle refrences in the expression', () => {
-      const expression = 'A1 + B2'
+      const expression = 'A1+B2'
       const components = MathParser.parseExpression(expression)
       expect(components).toEqual(['A1', '+', 'B2'])
     })
 
     it('Should handle negative numbers in the expression', () => {
-      const expression = '-5 + 3'
+      const expression = '-5+3'
       const components = MathParser.parseExpression(expression)
       expect(components).toEqual([-5, '+', 3])
     })
@@ -89,16 +91,16 @@ describe('MathParser', () => {
 
     it('Should throw an error for an expression with a missing row number', () => {
       const id = '1-2'
-      const expression = '2 + B'
+      const expression = '2+AB'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
-      }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_MISSING_ROW_NUMBER('B'))
+      }).toThrowError(MATH_ERRORS.INVALID_REFERENCE('AB'))
       expect(mockUpdateDependenciesMap).toBeCalledTimes(0)
     })
 
     it('Should throw an error for an expression with an empty field', () => {
       const id = '1-2'
-      const expression = '2 + A0'
+      const expression = '2+A0'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_EMPTY('A0'))
@@ -108,7 +110,7 @@ describe('MathParser', () => {
 
     it('Should throw an error for an expression with a field that has an error', () => {
       const id = '1-2'
-      const expression = '2 + B1'
+      const expression = '2+B1'
       sheet[1][1].hasError = true
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
@@ -119,7 +121,7 @@ describe('MathParser', () => {
 
     it('Should throw an error for an expression with a field that is not a number', () => {
       const id = '1-2'
-      const expression = '2 + B0'
+      const expression = '2+B0'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_IS_NOT_A_NUMBER('B0'))
@@ -129,7 +131,7 @@ describe('MathParser', () => {
 
     it('Should throw an error for an invalid expression with circular dependency', () => {
       const id = '1-2'
-      const expression = 'A1 + B2'
+      const expression = 'A1+B2'
       dependencies.add('1-2')
       dependencies.add('2-2')
 
@@ -142,7 +144,7 @@ describe('MathParser', () => {
 
     it('Should throw an error for an expression that could not be evaluated', () => {
       const id = '1-2'
-      const expression = '2 +'
+      const expression = '2+'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.INVALID_EXPRESSION)
@@ -151,7 +153,7 @@ describe('MathParser', () => {
 
     it('Should throw an error for an expression with a field that is out of bound', () => {
       const id = '1-2'
-      const expression = '2 + A3'
+      const expression = '2+A3'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_OUT_OF_BOUNDS('A3'))

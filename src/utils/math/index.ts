@@ -32,11 +32,13 @@ export class MathParser {
     return circularDepedencyFields
   }
 
-  public static validateExpression(expression: string): string {
-    const sanitizedExpression = expression.replace(/[^0-9+\-*/().A-Za-z_]/g, '')
+  public static sanatizeExpression(expression: string): string {
+    return expression.replace(/[^0-9+\-*/().A-Za-z_]/g, '')
+  }
+
+  public static validateExpression(sanitizedExpression: string): string {
     const consecutiveOperatorRegex = /[-+*/]{2}/g
-    const alphabeticLetterWithFloatingPointRegex = /[A-Za-z_]\d*\.\d+/g
-    const consecutiveLettersRegex = /[A-Za-z_][A-Za-z_]/g
+    const nonAlphaNumericLetterRegex = /[A-Za-z_]\D*(?![A-Za-z0-9])/g
     const invalidNonAlphaNumericRegex = /[^a-zA-Z0-9+\-./*]/g
 
     if (invalidNonAlphaNumericRegex.test(sanitizedExpression))
@@ -45,18 +47,15 @@ export class MathParser {
     if (consecutiveOperatorRegex.test(sanitizedExpression))
       return MATH_ERRORS.CONSECUTIVE_OPERATORS
 
-    if (alphabeticLetterWithFloatingPointRegex.test(sanitizedExpression))
-      return MATH_ERRORS.ALPHABETIC_LETTER_FOLLOWED_BY_A_FLOATING_POINT
-
-    if (consecutiveLettersRegex.test(sanitizedExpression))
-      return MATH_ERRORS.CONSECUTIVE_LETTERS
+    const invalidMatches = sanitizedExpression.match(nonAlphaNumericLetterRegex)
+    if (invalidMatches?.length) {
+      return MATH_ERRORS.INVALID_REFERENCE(invalidMatches.join(', '))
+    }
 
     return ""
   }
 
-  public static parseExpression(expression: string): (number | string)[] {
-    const sanitizedExpression = expression.replace(/[^0-9+\-*/().A-Za-z_]/g, '')
-
+  public static parseExpression(sanitizedExpression: string): (number | string)[] {
     const components: (number | string)[] = []
     let currentNumber = ''
     let currentVariable = ''
@@ -94,10 +93,13 @@ export class MathParser {
     dependencies: Set<string>,
     handleUpdateDepenciesMap: (reference: string, dependencies?: string[]) => void
   ): { result: number, dependencies: any[] } {
-    this.validateExpression(expression)
+    const sanatizedExpression = this.sanatizeExpression(expression)
+    const hasError = this.validateExpression(sanatizedExpression)
+    if (hasError)
+      throw new Error(hasError)
 
     const reference = parseRowAndColumnToReference(id)
-    const components = this.parseExpression(expression)
+    const components = this.parseExpression(sanatizedExpression)
     const fieldComponents = components
       .filter(component => typeof component === 'string' && this._isNotOperator(component)) as string[]
 
