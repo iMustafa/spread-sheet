@@ -39,9 +39,9 @@ describe('MathParser', () => {
 
   describe('parseExpression', () => {
     it('Should parse a valid expression into components', () => {
-      const expression = '2+3*4'
+      const expression = '2+3*4-1'
       const components = MathParser.parseExpression(expression)
-      expect(components).toEqual([2, '+', 3, '*', 4])
+      expect(components).toEqual([2, '+', 3, '*', 4, '-', 1])
     })
 
     it('Should handle refrences in the expression', () => {
@@ -50,10 +50,16 @@ describe('MathParser', () => {
       expect(components).toEqual(['A1', '+', 'B2'])
     })
 
-    it('Should handle negative numbers in the expression', () => {
+    it('Should handle negative numbers in the beginning of the expression', () => {
       const expression = '-5+3'
       const components = MathParser.parseExpression(expression)
       expect(components).toEqual([-5, '+', 3])
+    })
+
+    it('Should handle floating point numbers in the expression', () => {
+      const expression = '5.1+3.5+A0'
+      const components = MathParser.parseExpression(expression)
+      expect(components).toEqual([5.1, '+', 3.5, '+', 'A0'])
     })
   })
 

@@ -62,7 +62,11 @@ export class MathParser {
 
     for (let i = 0; i < sanitizedExpression.length; i++) {
       const char = sanitizedExpression[i]
-      if (/[0-9.-]/.test(char)) {
+
+      if (
+        /[0-9.]/.test(char) ||
+        (i === 0 && char === '-' && /[0-9A-Za-z]/.test(sanitizedExpression[i + 1]))
+      ) {
         currentNumber += char
         if (i === sanitizedExpression.length - 1 || !/[0-9.]/.test(sanitizedExpression[i + 1])) {
           components.push(parseFloat(currentNumber))
@@ -82,9 +86,9 @@ export class MathParser {
         components.push(char)
       }
     }
+
     return components
   }
-
 
   public static evaluateExpression(
     id: string,
@@ -148,9 +152,6 @@ export class MathParser {
         const [row, column] = parseReferenceToRowAndColumn(component)
         if (column > sheet[0].length - 1 || row > sheet.length - 1)
           throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_OUT_OF_BOUNDS(component))
-
-        if (isNaN(column) || isNaN(row))
-          throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_MISSING_ROW_NUMBER(component))
 
         const fieldValue = sheet[row][column]?.display
 
