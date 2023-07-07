@@ -19,7 +19,7 @@ export const SpreadSheetField = React.memo(({ field }: Props) => {
       return 'bg/container-moderate'
     else
       return 'bg/container-minor'
-  }, [isEditing])
+  }, [isEditing, field.hasError])
 
   const {
     initialzed,
