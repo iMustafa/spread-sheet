@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react'
 import { Input, Flex, Text, Box, Grid, LoadingSpinner, Button } from '@/design-system'
 import { useSpreadSheetContext } from '@/context'
-import { useIntersectionObserver } from '@/hooks'
+import { useIntersectionObserver, useWatchAndUpdateSheet } from '@/hooks'
 import { SpreadSheetField } from './SpreadSheetField'
 
 export const SpreadSheetView = () => {
@@ -9,10 +9,13 @@ export const SpreadSheetView = () => {
   const {
     sheet,
     canAddMore,
-    isUpdating,
-    handleGenerateCSVDownloadLink,
     handleAddMoreRows,
   } = useSpreadSheetContext()
+
+  const {
+    isUpdating,
+    handleGenerateCSVDownloadLink
+  } = useWatchAndUpdateSheet()
 
   const downloadCSVUrl = useMemo(() => {
     const url = handleGenerateCSVDownloadLink()

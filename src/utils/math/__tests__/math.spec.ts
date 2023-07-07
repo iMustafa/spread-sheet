@@ -56,42 +56,54 @@ describe('MathParser', () => {
   })
 
   describe('evaluateExpression', () => {
-    const sheet: SpreadSheetType = [
-      [
-        { id: '0-0', value: '', display: '', row: 0, column: 0 }, // A0
-        { id: '0-1', value: 'abc', display: 'abc', row: 0, column: 1 }, // B0
-        { id: '0-2', value: '3', display: '3', row: 0, column: 2 } // C0
-      ],
-      [
-        { id: '1-0', value: '1', display: '1', row: 1, column: 0 }, // A1
-        { id: '1-1', value: '4', display: '4', row: 1, column: 1 }, // B1
-        { id: '1-2', value: '', display: '', row: 1, column: 2 } // C1
+    let mockUpdateDependenciesMap: jest.Mock
+    let sheet: SpreadSheetType
+    let dependencies: Set<string>
+    beforeEach(() => {
+      mockUpdateDependenciesMap = jest.fn()
+      sheet = [
+        [
+          { id: '0-0', value: '', display: '', row: 0, column: 0 }, // A0
+          { id: '0-1', value: 'abc', display: 'abc', row: 0, column: 1 }, // B0
+          { id: '0-2', value: '3', display: '3', row: 0, column: 2 } // C0
+        ],
+        [
+          { id: '1-0', value: '1', display: '1', row: 1, column: 0 }, // A1
+          { id: '1-1', value: '4', display: '4', row: 1, column: 1 }, // B1
+          { id: '1-2', value: '', display: '', row: 1, column: 2 } // C1
+        ]
       ]
-    ]
-    const dependencies = new Set<string>()
+      dependencies = new Set<string>()
+    })
+
 
     it('Should evaluate a valid expression correctly', () => {
       const id = '1-2'
       const expression = '2 + 3 * A1'
-      const result = MathParser.evaluateExpression(id, expression, sheet, dependencies)
+      const result = MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       expect(result.result).toBe(5)
       expect(result.dependencies).toEqual(['A1'])
+      expect(mockUpdateDependenciesMap).toBeCalledTimes(1)
+      expect(mockUpdateDependenciesMap).toBeCalledWith('C1', ['1-0'])
     })
 
     it('Should throw an error for an expression with a missing row number', () => {
       const id = '1-2'
       const expression = '2 + B'
       expect(() => {
-        MathParser.evaluateExpression(id, expression, sheet, dependencies)
+        MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_MISSING_ROW_NUMBER('B'))
+      expect(mockUpdateDependenciesMap).toBeCalledTimes(0)
     })
 
     it('Should throw an error for an expression with an empty field', () => {
       const id = '1-2'
       const expression = '2 + A0'
       expect(() => {
-        MathParser.evaluateExpression(id, expression, sheet, dependencies)
+        MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_EMPTY('A0'))
+      expect(mockUpdateDependenciesMap).toBeCalledTimes(1)
+      expect(mockUpdateDependenciesMap).toBeCalledWith('C1', ['0-0'])
     })
 
     it('Should throw an error for an expression with a field that has an error', () => {
@@ -99,16 +111,20 @@ describe('MathParser', () => {
       const expression = '2 + B1'
       sheet[1][1].hasError = true
       expect(() => {
-        MathParser.evaluateExpression(id, expression, sheet, dependencies)
+        MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_HAS_ERROR('B1'))
+      expect(mockUpdateDependenciesMap).toBeCalledTimes(1)
+      expect(mockUpdateDependenciesMap).toBeCalledWith('C1', ['1-1'])
     })
 
     it('Should throw an error for an expression with a field that is not a number', () => {
       const id = '1-2'
       const expression = '2 + B0'
       expect(() => {
-        MathParser.evaluateExpression(id, expression, sheet, dependencies)
+        MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_IS_NOT_A_NUMBER('B0'))
+      expect(mockUpdateDependenciesMap).toBeCalledTimes(1)
+      expect(mockUpdateDependenciesMap).toBeCalledWith('C1', ['0-1'])
     })
 
     it('Should throw an error for an invalid expression with circular dependency', () => {
@@ -116,17 +132,29 @@ describe('MathParser', () => {
       const expression = 'A1 + B2'
       dependencies.add('1-2')
       dependencies.add('2-2')
+
       expect(() => {
-        MathParser.evaluateExpression(id, expression, sheet, dependencies)
+        MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.CIRCULAR_DEPENDENCY(['A1', 'B2']))
+      expect(mockUpdateDependenciesMap).toBeCalledTimes(1)
+      expect(mockUpdateDependenciesMap).toBeCalledWith('C1', ['1-0', '2-1'])
     })
 
     it('Should throw an error for an expression that could not be evaluated', () => {
       const id = '1-2'
       const expression = '2 +'
       expect(() => {
-        MathParser.evaluateExpression(id, expression, sheet, dependencies)
+        MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
       }).toThrowError(MATH_ERRORS.INVALID_EXPRESSION)
+      expect(mockUpdateDependenciesMap).toBeCalledTimes(0)
+    })
+
+    it('Should throw an error for an expression with a field that is out of bound', () => {
+      const id = '1-2'
+      const expression = '2 + A3'
+      expect(() => {
+        MathParser.evaluateExpression(id, expression, sheet, dependencies, mockUpdateDependenciesMap)
+      }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_OUT_OF_BOUNDS('A3'))
     })
   })
 })

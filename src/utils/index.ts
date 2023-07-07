@@ -1,5 +1,5 @@
 export {
-  parseRefrenceToRowAndColumn,
+  parseReferenceToRowAndColumn,
   parseRowAndColumnToReference
 } from './expressions'
 export { MathParser } from './math'

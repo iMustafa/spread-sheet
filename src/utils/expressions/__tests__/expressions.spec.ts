@@ -1,21 +1,21 @@
-import { parseRefrenceToRowAndColumn, parseRowAndColumnToReference } from '../index'
+import { parseReferenceToRowAndColumn, parseRowAndColumnToReference } from '../index'
 
 describe('ExpressionsParser', () => {
-  describe('parseRefrenceToRowAndColumn', () => {
+  describe('parseReferenceToRowAndColumn', () => {
     it('should return [0, 0] for input "A0"', () => {
-      expect(parseRefrenceToRowAndColumn('A0')).toEqual([0, 0])
+      expect(parseReferenceToRowAndColumn('A0')).toEqual([0, 0])
     })
 
-    it('should return [2, 0] for input "C0"', () => {
-      expect(parseRefrenceToRowAndColumn('C0')).toEqual([2, 0])
+    it('should return [0, 2] for input "C0"', () => {
+      expect(parseReferenceToRowAndColumn('C0')).toEqual([0, 2])
     })
 
-    it('should return [25, 10] for input "Z10"', () => {
-      expect(parseRefrenceToRowAndColumn('Z10')).toEqual([25, 10])
+    it('should return [10, 25] for input "Z10"', () => {
+      expect(parseReferenceToRowAndColumn('Z10')).toEqual([10, 25])
     })
 
-    it('should return [26, 0] for input "AA0"', () => {
-      expect(parseRefrenceToRowAndColumn('AA0')).toEqual([26, 0])
+    it('should return [0, 26] for input "AA0"', () => {
+      expect(parseReferenceToRowAndColumn('AA0')).toEqual([0, 26])
     })
   })
 

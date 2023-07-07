@@ -1,15 +1,13 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { useUpdateSheet, useGetSheetStatus } from '@/queries'
 import { generateCSVString, getTimeDifferenceInMilliseconds } from '@/utils'
-import { SheetStatus, SpreadSheetType, SheetUpdateStatusTimeout } from '@/types'
+import { SheetStatus, SheetUpdateStatusTimeout } from '@/types'
+import { useSpreadSheetContext } from '@/context'
 
-export const useWatchAndUpdateSheet = (
-  sheet: SpreadSheetType,
-  lastEditField: { column: number, row: number, maxRow: number },
-  initialzed: boolean
-) => {
+export const useWatchAndUpdateSheet = () => {
+  const { sheet, lastEditField, initialzed } = useSpreadSheetContext()
+
   const timemout = useRef<NodeJS.Timeout | null>()
-
   const [canSaveAgain, setCanSaveAgain] = useState(true)
   const [wasUpdatedWhileSaving, setWasUpdatedWhileSaving] = useState(false)
   const [activeSheetProcess, setActiveSheetProcess] = useState<SheetUpdateStatusTimeout>({} as SheetUpdateStatusTimeout)

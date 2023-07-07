@@ -1,5 +1,5 @@
 import { SpreadSheetType } from '@/types'
-import { parseRowAndColumnToReference, parseRefrenceToRowAndColumn } from '../expressions'
+import { parseRowAndColumnToReference, parseReferenceToRowAndColumn, parseReferenceToId } from '../expressions'
 import { MATH_ERRORS } from './errors'
 
 export class MathParser {
@@ -17,10 +17,10 @@ export class MathParser {
   ) {
     const circularDepedencyFields: string[] = []
     const [row, column] = id.split('-').map(i => parseInt(i))
-    const refrence = parseRowAndColumnToReference([row, column])
+    const reference = parseRowAndColumnToReference([row, column])
 
-    if (fieldComponents.includes(refrence))
-      circularDepedencyFields.push(refrence)
+    if (fieldComponents.includes(reference))
+      circularDepedencyFields.push(reference)
 
     if (!dependencies.size)
       return circularDepedencyFields
@@ -91,17 +91,24 @@ export class MathParser {
     id: string,
     expression: string,
     sheet: SpreadSheetType,
-    dependencies: Set<string>
+    dependencies: Set<string>,
+    handleUpdateDepenciesMap: (reference: string, dependencies?: string[]) => void
   ): { result: number, dependencies: any[] } {
     this.validateExpression(expression)
 
+    const reference = parseRowAndColumnToReference(id)
     const components = this.parseExpression(expression)
     const fieldComponents = components
       .filter(component => typeof component === 'string' && this._isNotOperator(component)) as string[]
 
     const circularDepedencyFields = this._detectCircularDependency(id, fieldComponents, dependencies)
-    if (circularDepedencyFields.length)
+    if (circularDepedencyFields.length) {
+      handleUpdateDepenciesMap(
+        reference,
+        fieldComponents.map(ref => parseReferenceToId(ref))
+      )
       throw new Error(MATH_ERRORS.CIRCULAR_DEPENDENCY(circularDepedencyFields))
+    }
 
     const stack: (number | string)[] = []
 
@@ -136,21 +143,35 @@ export class MathParser {
 
     for (const component of components) {
       if (typeof component === 'string' && this._isNotOperator(component)) {
-        const [column, row] = parseRefrenceToRowAndColumn(component)
+        const [row, column] = parseReferenceToRowAndColumn(component)
+        if (column > sheet[0].length - 1 || row > sheet.length - 1)
+          throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_OUT_OF_BOUNDS(component))
 
-        if (!row && row != 0)
+        if (isNaN(column) || isNaN(row))
           throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_MISSING_ROW_NUMBER(component))
 
         const fieldValue = sheet[row][column]?.display
 
-        if (!fieldValue && fieldValue != '0')
+        if (!fieldValue && fieldValue != '0') {
+          handleUpdateDepenciesMap(reference, fieldComponents.map(ref => parseReferenceToId(ref)))
           throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_EMPTY(component))
+        }
 
-        if (sheet[row][column].hasError)
+        if (sheet[row][column].hasError) {
+          handleUpdateDepenciesMap(
+            reference,
+            fieldComponents.map(ref => parseReferenceToId(ref))
+          )
           throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_HAS_ERROR(component))
+        }
 
-        if (isNaN(Number(fieldValue)) && +fieldValue != 0)
+        if (isNaN(Number(fieldValue)) && +fieldValue != 0) {
+          handleUpdateDepenciesMap(
+            reference,
+            fieldComponents.map(ref => parseReferenceToId(ref))
+          )
           throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_IS_NOT_A_NUMBER(component))
+        }
 
         const variableData = [+fieldValue]
         stack.push(...variableData)
@@ -171,6 +192,10 @@ export class MathParser {
       applyOperator()
 
     if (stack.length === 1 && typeof stack[0] === 'number') {
+      handleUpdateDepenciesMap(
+        reference,
+        fieldComponents.map(ref => parseReferenceToId(ref))
+      )
       return {
         result: Math.round(stack[0] * 100) / 100,
         dependencies: fieldComponents

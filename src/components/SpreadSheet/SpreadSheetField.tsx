@@ -13,6 +13,7 @@ export const SpreadSheetField = React.memo(({ field }: Props) => {
   const [value, setValue] = useState(field.value)
   const [isEditing, setIsEditting] = useState(false)
   const {
+    initialzed,
     handleUpdateField,
     handleUpdateDependants
   } = useSpreadSheetContext()
@@ -29,7 +30,8 @@ export const SpreadSheetField = React.memo(({ field }: Props) => {
   }
 
   useEffect(() => {
-    handleUpdateDependants(field.id)
+    if (initialzed)
+      handleUpdateDependants(field.id)
   }, [field])
 
   return (
@@ -41,6 +43,7 @@ export const SpreadSheetField = React.memo(({ field }: Props) => {
       alignItems='center'
       height={40}
       position='relative'
+      data-testid={`spreadsheet-field-${field.id}`}
     >
 
       {
