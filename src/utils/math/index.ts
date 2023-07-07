@@ -1,5 +1,6 @@
 import { SpreadSheetType } from '@/types'
 import { parseRowAndColumnToReference, parseRefrenceToRowAndColumn } from '../expressions'
+import { MATH_ERRORS } from './errors'
 
 export class MathParser {
   private static _isNotOperator(component: string) {
@@ -39,16 +40,16 @@ export class MathParser {
     const invalidNonAlphaNumericRegex = /[^a-zA-Z0-9+\-./*]/g
 
     if (invalidNonAlphaNumericRegex.test(sanitizedExpression))
-      return "Invalid expression: Invalid non-alphanumeric character"
+      return MATH_ERRORS.INVALID_NON_ALPHANUMERIC_CHARACTER
 
     if (consecutiveOperatorRegex.test(sanitizedExpression))
-      return "Invalid expression: Consecutive operators"
+      return MATH_ERRORS.CONSECUTIVE_OPERATORS
 
     if (alphabeticLetterWithFloatingPointRegex.test(sanitizedExpression))
-      return "Invalid expression: Alphabetic letter followed by a floating point"
+      return MATH_ERRORS.ALPHABETIC_LETTER_FOLLOWED_BY_A_FLOATING_POINT
 
     if (consecutiveLettersRegex.test(sanitizedExpression))
-      return "Invalid expression: Consecutive letters"
+      return MATH_ERRORS.CONSECUTIVE_LETTERS
 
     return ""
   }
@@ -92,8 +93,7 @@ export class MathParser {
     sheet: SpreadSheetType,
     dependencies: Set<string>
   ): { result: number, dependencies: any[] } {
-    const isInValidExpressionException = this.validateExpression(expression)
-    if (isInValidExpressionException) throw new Error(isInValidExpressionException)
+    this.validateExpression(expression)
 
     const components = this.parseExpression(expression)
     const fieldComponents = components
@@ -101,7 +101,7 @@ export class MathParser {
 
     const circularDepedencyFields = this._detectCircularDependency(id, fieldComponents, dependencies)
     if (circularDepedencyFields.length)
-      throw new Error(`Invalid expression: Circular dependency ${circularDepedencyFields.join(', ')}`)
+      throw new Error(MATH_ERRORS.CIRCULAR_DEPENDENCY(circularDepedencyFields))
 
     const stack: (number | string)[] = []
 
@@ -139,16 +139,18 @@ export class MathParser {
         const [column, row] = parseRefrenceToRowAndColumn(component)
 
         if (!row && row != 0)
-          throw new Error(`Invalid expression: Field ${component} is missing row number`)
+          throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_MISSING_ROW_NUMBER(component))
 
         const fieldValue = sheet[row][column]?.display
 
         if (!fieldValue && fieldValue != '0')
-          throw new Error(`Invalid expression: Field ${component} is empty`)
+          throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_EMPTY(component))
+
         if (sheet[row][column].hasError)
-          throw new Error(`Invalid expression: Field ${component} has error`)
+          throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_HAS_ERROR(component))
+
         if (isNaN(Number(fieldValue)) && +fieldValue != 0)
-          throw new Error(`Invalid expression: Field ${component} is not a number`)
+          throw new Error(MATH_ERRORS.DEPENDENCY_FIELD_IS_NOT_A_NUMBER(component))
 
         const variableData = [+fieldValue]
         stack.push(...variableData)
@@ -174,7 +176,7 @@ export class MathParser {
         dependencies: fieldComponents
       }
     } else {
-      throw new Error('Invalid expression: Expression could not be evaluated')
+      throw new Error(MATH_ERRORS.INVALID_EXPRESSION)
     }
   }
 }

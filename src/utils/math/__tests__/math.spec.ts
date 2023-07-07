@@ -1,5 +1,6 @@
 import { SpreadSheetType } from '@/types'
 import { MathParser } from '../index'
+import { MATH_ERRORS } from '../errors'
 
 describe('MathParser', () => {
   describe('validateExpression', () => {
@@ -12,25 +13,25 @@ describe('MathParser', () => {
     it('Should not accept non-alphanumeric', () => {
       const expression = '2 + _'
       const result = MathParser.validateExpression(expression)
-      expect(result).toBe('Invalid expression: Invalid non-alphanumeric character')
+      expect(result).toBe(MATH_ERRORS.INVALID_NON_ALPHANUMERIC_CHARACTER)
     })
 
     it('Should not accept consecutive operators', () => {
       const expression = '2 ++ 3'
       const result = MathParser.validateExpression(expression)
-      expect(result).toBe('Invalid expression: Consecutive operators')
+      expect(result).toBe(MATH_ERRORS.CONSECUTIVE_OPERATORS)
     })
 
     it('Should not accept floating point after an alphabetic letter', () => {
       const expression = 'A.5 + 3'
       const result = MathParser.validateExpression(expression)
-      expect(result).toBe('Invalid expression: Alphabetic letter followed by a floating point')
+      expect(result).toBe(MATH_ERRORS.ALPHABETIC_LETTER_FOLLOWED_BY_A_FLOATING_POINT)
     })
 
     it('Should return an error message for expressions with consecutive letters', () => {
       const expression = '2AB + 3'
       const result = MathParser.validateExpression(expression)
-      expect(result).toBe('Invalid expression: Consecutive letters')
+      expect(result).toBe(MATH_ERRORS.CONSECUTIVE_LETTERS)
     })
   })
 
@@ -82,7 +83,7 @@ describe('MathParser', () => {
       const expression = '2 + B'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies)
-      }).toThrowError('Invalid expression: Field B is missing row number')
+      }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_MISSING_ROW_NUMBER('B'))
     })
 
     it('Should throw an error for an expression with an empty field', () => {
@@ -90,7 +91,7 @@ describe('MathParser', () => {
       const expression = '2 + A0'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies)
-      }).toThrowError('Invalid expression: Field A0 is empty')
+      }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_EMPTY('A0'))
     })
 
     it('Should throw an error for an expression with a field that has an error', () => {
@@ -99,7 +100,7 @@ describe('MathParser', () => {
       sheet[1][1].hasError = true
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies)
-      }).toThrowError('Invalid expression: Field B1 has error')
+      }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_HAS_ERROR('B1'))
     })
 
     it('Should throw an error for an expression with a field that is not a number', () => {
@@ -107,7 +108,7 @@ describe('MathParser', () => {
       const expression = '2 + B0'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies)
-      }).toThrowError('Invalid expression: Field B0 is not a number')
+      }).toThrowError(MATH_ERRORS.DEPENDENCY_FIELD_IS_NOT_A_NUMBER('B0'))
     })
 
     it('Should throw an error for an invalid expression with circular dependency', () => {
@@ -117,7 +118,7 @@ describe('MathParser', () => {
       dependencies.add('2-2')
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies)
-      }).toThrowError('Invalid expression: Circular dependency A1, B2')
+      }).toThrowError(MATH_ERRORS.CIRCULAR_DEPENDENCY(['A1', 'B2']))
     })
 
     it('Should throw an error for an expression that could not be evaluated', () => {
@@ -125,7 +126,7 @@ describe('MathParser', () => {
       const expression = '2 +'
       expect(() => {
         MathParser.evaluateExpression(id, expression, sheet, dependencies)
-      }).toThrowError('Invalid expression: Expression could not be evaluated')
+      }).toThrowError(MATH_ERRORS.INVALID_EXPRESSION)
     })
   })
 })
